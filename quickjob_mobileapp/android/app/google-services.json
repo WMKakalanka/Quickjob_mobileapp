@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "320266323421",
+    "project_id": "quickjobwebapp",
+    "storage_bucket": "quickjobwebapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:320266323421:android:8499636141668a785de234",
+        "android_client_info": {
+          "package_name": "com.example.quickjob_mobileapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "320266323421-hmtbosd34v64qqcfe72gabb9cblg0aq0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEXsMo7AcdkRuDHMJYb4qaKHlSnGy_-kc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "320266323421-hmtbosd34v64qqcfe72gabb9cblg0aq0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "320266323421-th2udma88is8at9fevk6pss20o99hoie.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
