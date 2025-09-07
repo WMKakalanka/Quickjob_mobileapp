@@ -1,7 +1,8 @@
-// lib/main.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'loading_page.dart'; 
+import 'landing_page.dart'; 
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,13 +32,111 @@ class QuickJobApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LandingPage(),
+      home: const SplashScreen(), // App starts with SplashScreen
     );
   }
 }
 
-class LandingPage extends StatelessWidget {
-  const LandingPage({super.key});
+// ------------------- SplashScreen -------------------
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+  with TickerProviderStateMixin {
+  late AnimationController _logoController;
+  late Animation<double> _logoScaleAnimation;
+  late Animation<double> _logoFadeAnimation;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  late AnimationController _textController;
+  late Animation<Offset> _textSlideAnimation;
+  late Animation<double> _textFadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Logo animation: scale and fade in with bounce
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    _logoScaleAnimation = Tween<double>(begin: 0.7, end: 1.0)
+        .animate(CurvedAnimation(parent: _logoController, curve: Curves.elasticOut));
+    _logoFadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
+
+    // Pulse animation: scale up/down repeatedly
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.12)
+        .animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _pulseController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _pulseController.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        _pulseController.forward();
+      }
+    });
+
+    // Text animation: slide up and fade in after logo
+    _textController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _textSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
+    _textFadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _textController, curve: Curves.easeIn));
+
+    _logoController.forward();
+    _pulseController.forward();
+    Future.delayed(const Duration(milliseconds: 900), () {
+      _textController.forward();
+    });
+
+    // Navigate to LandingPage after 8 seconds
+    Timer(const Duration(seconds: 8), () {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 900),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const LandingPage(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final offsetAnimation = Tween<Offset>(
+              begin: const Offset(0, 0.2),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ));
+
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: offsetAnimation,
+                child: child,
+              ),
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+  _logoController.dispose();
+  _pulseController.dispose();
+  _textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,77 +150,88 @@ class LandingPage extends StatelessWidget {
             fit: BoxFit.cover,
           ),
 
-          // Content
+          // Center content
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(flex: 2),
-
-              // Logo
-              Image.asset(
-                'assets/logo.png',
-                height: 120,
-              ),
-
-              const SizedBox(height: 20),
-
-              // Welcome Text
-              const Text(
-                "Welcome to Quick Job Mobile App",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 5,
-                      color: Colors.black54,
-                      offset: Offset(1, 1),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Spacer(flex: 1),
-
-              // Buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+              Expanded(
+                flex: 7,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Navigate to Login
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Login pressed")),
-                        );
-                      },
-                      child: const Text("Login"),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple.shade200,
-                        foregroundColor: Colors.black,
-                      ),
-                      onPressed: () {
-                        // Navigate to LoadingPage first
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoadingPage(),
+                    // Modern Animated Logo
+                    AnimatedBuilder(
+                      animation: Listenable.merge([_logoController, _pulseController]),
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _logoFadeAnimation.value,
+                          child: Transform.scale(
+                            scale: _logoScaleAnimation.value * _pulseAnimation.value,
+                            child: Image.asset(
+                              'assets/logo.png',
+                              height: 200,
+                            ),
                           ),
                         );
                       },
-                      child: const Text("Quick Find"),
+                    ),
+                    const SizedBox(height: 32),
+                    // Modern Animated Text
+                    FadeTransition(
+                      opacity: _textFadeAnimation,
+                      child: SlideTransition(
+                        position: _textSlideAnimation,
+                        child: const Text(
+                          "Quick Job Mobile",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 6,
+                                color: Colors.black54,
+                                offset: Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-
-              const Spacer(flex: 3),
+              Expanded(
+                flex: 1,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 18.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '© 2025 QuickJob. All rights reserved.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Software Version 1.0.0',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],

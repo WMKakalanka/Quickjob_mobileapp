@@ -1,4 +1,4 @@
-// lib/loading_page.dart
+
 import 'package:flutter/material.dart';
 import 'quick_find_page.dart';
 
