@@ -10,27 +10,31 @@ class QuickFindPage extends StatefulWidget {
 }
 
 class _QuickFindPageState extends State<QuickFindPage> {
-  String nameFilter = '';
   String districtFilter = '';
+  String cityFilter = '';
   String skillFilter = '';
   List<String> allDistricts = [];
+  List<String> allCities = [];
   List<String> allSkills = [];
 
   @override
   void initState() {
     super.initState();
-    // Try to fetch master district list from Firestore 'map' collection (as documents)
+    // Fetch master district and city lists from Firestore 'map' collection
     FirebaseFirestore.instance
         .collection('map')
         .get()
         .then((snapshot) {
       final districts = <String>{};
+      final cities = <String>{};
       for (var doc in snapshot.docs) {
         final data = doc.data();
         if (data['district'] != null && data['district'].toString().isNotEmpty) {
           districts.add(data['district'].toString());
         }
-        // If using a list field, also check for 'districts' array
+        if (data['city'] != null && data['city'].toString().isNotEmpty) {
+          cities.add(data['city'].toString());
+        }
         if (data['districts'] is List) {
           for (var d in List.from(data['districts'])) {
             if (d != null && d.toString().isNotEmpty) {
@@ -38,30 +42,18 @@ class _QuickFindPageState extends State<QuickFindPage> {
             }
           }
         }
-      }
-      // Fallback: if no districts found, use userlog
-      if (districts.isEmpty) {
-        FirebaseFirestore.instance
-            .collection('userlog')
-            .where('accountType', isEqualTo: 'Employee')
-            .get()
-            .then((snapshot) {
-          final fallbackDistricts = <String>{};
-          for (var doc in snapshot.docs) {
-            final data = doc.data();
-            if (data['district'] != null && data['district'].toString().isNotEmpty) {
-              fallbackDistricts.add(data['district'].toString());
+        if (data['cities'] is List) {
+          for (var c in List.from(data['cities'])) {
+            if (c != null && c.toString().isNotEmpty) {
+              cities.add(c.toString());
             }
           }
-          setState(() {
-            allDistricts = fallbackDistricts.toList();
-          });
-        });
-      } else {
-        setState(() {
-          allDistricts = districts.toList();
-        });
+        }
       }
+      setState(() {
+        allDistricts = districts.toList();
+        allCities = cities.toList();
+      });
     });
 
     // Fetch master job category list from Firestore 'jobcategory' collection
@@ -109,20 +101,19 @@ class _QuickFindPageState extends State<QuickFindPage> {
   }
 
   bool _matchesFilters(Map<String, dynamic> data) {
-    final name =
-        ((data['firstName'] ?? '') + ' ' + (data['lastName'] ?? '')).toLowerCase();
     final district = (data['district'] ?? '').toString();
+    final city = (data['city'] ?? '').toString();
     final skills = (data['skills'] is List)
         ? List.from(data['skills'])
             .map((s) => s is Map ? (s['skill'] ?? '').toString() : '')
             .toList()
         : <String>[];
     bool matches = true;
-    if (nameFilter.isNotEmpty) {
-      matches &= name.contains(nameFilter.toLowerCase());
-    }
     if (districtFilter.isNotEmpty) {
       matches &= district == districtFilter;
+    }
+    if (cityFilter.isNotEmpty) {
+      matches &= city == cityFilter;
     }
     if (skillFilter.isNotEmpty) {
       matches &= skills.contains(skillFilter);
@@ -177,26 +168,6 @@ class _QuickFindPageState extends State<QuickFindPage> {
                   children: [
                     Expanded(
                       flex: 1,
-                      child: TextField(
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                        decoration: InputDecoration(
-                          hintText: 'Filter by Name',
-                          hintStyle: TextStyle(color: Colors.white70, fontSize: 12),
-                          fillColor: Colors.transparent,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.white24, width: 0.5),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-                        ),
-                        controller: TextEditingController(text: nameFilter.isEmpty ? '' : nameFilter),
-                        onChanged: (val) => setState(() => nameFilter = val),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      flex: 1,
                       child: DropdownButtonFormField<String>(
                         isExpanded: true,
                         dropdownColor: Colors.black.withOpacity(0.8),
@@ -216,7 +187,49 @@ class _QuickFindPageState extends State<QuickFindPage> {
                             ),
                           ))
                         ],
-                        onChanged: (val) => setState(() => districtFilter = val ?? ''),
+                        onChanged: (val) {
+                          setState(() {
+                            districtFilter = val ?? '';
+                            cityFilter = '';
+                          });
+                        },
+                        decoration: InputDecoration(
+                          fillColor: Colors.transparent,
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.white24, width: 0.5),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                        ),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        dropdownColor: Colors.black.withOpacity(0.8),
+                        value: cityFilter.isEmpty ? '' : cityFilter,
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('All Cities', style: TextStyle(fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ),
+                          ...allCities.map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(
+                              c,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                        ],
+                        onChanged: districtFilter.isEmpty
+                            ? null
+                            : (val) => setState(() => cityFilter = val ?? ''),
                         decoration: InputDecoration(
                           fillColor: Colors.transparent,
                           filled: true,

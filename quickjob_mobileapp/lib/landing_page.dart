@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'loading_page.dart'; // For Quick Find
+import 'sign_in.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -134,8 +135,11 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                         children: [
                           ElevatedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Login pressed")),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SignInPage(),
+                                ),
                               );
                               _startTypewriter();
                             },
