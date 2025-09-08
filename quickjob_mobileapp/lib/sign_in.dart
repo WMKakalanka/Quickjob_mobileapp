@@ -1,5 +1,7 @@
 import 'landing_page.dart';
 import 'sign_up.dart';
+import 'welcome.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +11,10 @@ class SignInPage extends StatelessWidget {
 
   Future<void> _handleSignIn(BuildContext context) async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      // Force chooser by signing out any previous GoogleSignIn instance
+      await googleSignIn.signOut();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return; // user canceled login
 
       final GoogleSignInAuthentication googleAuth =
@@ -21,13 +26,44 @@ class SignInPage extends StatelessWidget {
       );
 
       // Sign in to Firebase
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) throw Exception('User is null after sign-in');
 
-      // Navigate to LandingPage on success
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LandingPage()),
-      );
+      // Check registration in Firestore
+      final doc = await FirebaseFirestore.instance.collection('userlog').doc(user.uid).get();
+      if (!doc.exists) {
+        // Not registered yet
+        await FirebaseAuth.instance.signOut();
+        await googleSignIn.signOut();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please Sign up first!..')),
+          );
+        }
+        return;
+      }
+
+      // Get first name from Firestore if available, otherwise fall back to Google account
+      String firstName = '';
+      try {
+        final data = doc.data();
+        if (data != null && data['firstName'] != null && (data['firstName'] as String).isNotEmpty) {
+          firstName = data['firstName'] as String;
+        }
+      } catch (_) {}
+      if (firstName.isEmpty) {
+        firstName = googleUser.displayName?.split(' ').first ?? '';
+      }
+
+      // Navigate to animated welcome screen which will continue to employee page
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => WelcomePage(firstName: firstName)),
+        );
+      }
     } catch (error, stack) {
       debugPrint('Google sign-in error: $error');
       debugPrint('$stack');
