@@ -1,4 +1,8 @@
 
+// loading_page.dart
+// - Intermediate page used for Quick Find lookup.
+// - Provides a small loading animation and then navigates to the QuickFindPage.
+// - Keep logic here lightweight; heavy work should be moved to providers/services.
 import 'package:flutter/material.dart';
 import 'quick_find_page.dart';
 

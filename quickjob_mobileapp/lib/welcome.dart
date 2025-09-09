@@ -1,3 +1,7 @@
+// welcome.dart
+// - A lightweight animated welcome screen shown after sign-in.
+// - Provides a short visual transition before routing to the Employee dashboard or settings.
+// - Keep animation lightweight to avoid blocking the first frame; navigation should occur after the animation completes.
 import 'package:flutter/material.dart';
 import 'employee.dart';
 

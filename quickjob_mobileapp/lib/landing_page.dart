@@ -1,3 +1,7 @@
+// landing_page.dart
+// - Landing hub that offers Login or Quick Find.
+// - Uses simple animated typewriter text and routes to SignInPage or LoadingPage.
+// Note: keep visual assets in `assets/`; changes here affect the first user flow.
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'loading_page.dart'; // For Quick Find

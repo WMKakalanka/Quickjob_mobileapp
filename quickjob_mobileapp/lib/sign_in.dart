@@ -1,6 +1,11 @@
+// sign_in.dart
+// - Handles Google Sign-In flow and initial post-login routing.
+// - On successful sign-in, checks the user's `userlog` doc to decide whether to send them to the welcome flow or to complete settings.
+// - Important: changes to sign-in behavior should preserve error handling and sign-out cleanup.
 import 'landing_page.dart';
 import 'sign_up.dart';
 import 'welcome.dart';
+import 'employee_settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -47,8 +52,9 @@ class SignInPage extends StatelessWidget {
 
       // Get first name from Firestore if available, otherwise fall back to Google account
       String firstName = '';
+      Map<String, dynamic>? data;
       try {
-        final data = doc.data();
+        data = doc.data();
         if (data != null && data['firstName'] != null && (data['firstName'] as String).isNotEmpty) {
           firstName = data['firstName'] as String;
         }
@@ -57,12 +63,29 @@ class SignInPage extends StatelessWidget {
         firstName = googleUser.displayName?.split(' ').first ?? '';
       }
 
-      // Navigate to animated welcome screen which will continue to employee page
+      // If user has only first/last/email or missing required profile fields, send to settings page
+      bool needsSetup = false;
+      if (data == null) {
+        needsSetup = true;
+      } else {
+        // required fields for a completed employee profile
+        final hasDistrict = (data['district'] != null && (data['district'] as String).isNotEmpty);
+        final hasCity = (data['city'] != null && (data['city'] as String).isNotEmpty);
+        final hasContact = (data['contactNumber'] != null && (data['contactNumber'] as String).isNotEmpty);
+        final hasServiceLoc = (data['serviceLocation'] != null && (data['serviceLocation'] as String).isNotEmpty);
+        final hasSkills = (data['skills'] is Iterable && (data['skills'] as Iterable).isNotEmpty);
+        if (!hasDistrict || !hasCity || !hasContact || !hasServiceLoc || !hasSkills) needsSetup = true;
+      }
+
       if (context.mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => WelcomePage(firstName: firstName)),
-        );
+        if (needsSetup) {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const EmployeeSettingsPage()));
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => WelcomePage(firstName: firstName)),
+          );
+        }
       }
     } catch (error, stack) {
       debugPrint('Google sign-in error: $error');

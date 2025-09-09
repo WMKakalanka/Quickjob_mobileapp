@@ -1,3 +1,9 @@
+// quick_find_page.dart
+// - Implements the Quick Find / employee listing UI used by employers and employees.
+// - Provides district/city filtering, search, and the "Hire Now" flow.
+// - After a successful hire or call, it optionally prompts the user to rate the service provider and updates the provider's
+//   `userlog.rating` and `userlog.ratedCount` fields in Firestore with a weighted average.
+// - Keep Firestore writes idempotent and handle missing fields defensively.
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,44 +21,32 @@ class _QuickFindPageState extends State<QuickFindPage> {
   String skillFilter = '';
   List<String> allDistricts = [];
   List<String> allCities = [];
+  Map<String, List<String>> _citiesByDistrict = {};
   List<String> allSkills = [];
 
   @override
   void initState() {
     super.initState();
-    // Fetch master district and city lists from Firestore 'map' collection
-    FirebaseFirestore.instance
-        .collection('map')
-        .get()
-        .then((snapshot) {
-      final districts = <String>{};
-      final cities = <String>{};
+    // Fetch master district list and cities by district from Firestore 'map' collection
+    FirebaseFirestore.instance.collection('map').get().then((snapshot) {
+      final districts = <String>[];
+      final citiesMap = <String, List<String>>{};
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        if (data['district'] != null && data['district'].toString().isNotEmpty) {
-          districts.add(data['district'].toString());
-        }
-        if (data['city'] != null && data['city'].toString().isNotEmpty) {
-          cities.add(data['city'].toString());
-        }
-        if (data['districts'] is List) {
-          for (var d in List.from(data['districts'])) {
-            if (d != null && d.toString().isNotEmpty) {
-              districts.add(d.toString());
-            }
+        final name = (data['districtName'] ?? data['name'] ?? doc.id).toString();
+        final cities = <String>[];
+        if (data['cities'] is Iterable) {
+          for (var c in (data['cities'] as Iterable)) {
+            if (c != null && c.toString().isNotEmpty) cities.add(c.toString());
           }
         }
-        if (data['cities'] is List) {
-          for (var c in List.from(data['cities'])) {
-            if (c != null && c.toString().isNotEmpty) {
-              cities.add(c.toString());
-            }
-          }
-        }
+        districts.add(name);
+        citiesMap[name] = cities;
       }
       setState(() {
-        allDistricts = districts.toList();
-        allCities = cities.toList();
+        allDistricts = districts;
+        _citiesByDistrict = citiesMap;
+        allCities = []; // start empty until district selected
       });
     });
 
@@ -98,6 +92,136 @@ class _QuickFindPageState extends State<QuickFindPage> {
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     }
+  }
+
+  Future<void> _showRatingDialog(BuildContext context, String userDocId) async {
+    final emailCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        double selected = 0.0;
+        int hoverIndex = -1;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: StatefulBuilder(builder: (context, setState) {
+            return Container(
+              width: 460,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F1720), // dark panel
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.purple.shade300, width: 1),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 24, offset: const Offset(0, 8)),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Rate Your Experience', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (i) {
+                      final filled = i < selected;
+                      final hovered = i <= hoverIndex;
+                      final color = filled ? Colors.amber : (hovered ? Colors.white : Colors.white54);
+                      return MouseRegion(
+                        onEnter: (_) => setState(() => hoverIndex = i),
+                        onExit: (_) => setState(() => hoverIndex = -1),
+                        child: GestureDetector(
+                          onTap: () => setState(() => selected = i + 1.0),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            child: Icon(
+                              filled ? Icons.star : Icons.star_border,
+                              size: 28,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailCtrl,
+                    style: const TextStyle(color: Colors.white70),
+                    decoration: InputDecoration(
+                      hintText: 'Enter your Gmail address',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: const Color(0xFF11141A),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purpleAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: selected <= 0.0
+                          ? null
+                          : () async {
+                              Navigator.of(ctx).pop();
+                              try {
+                                final docRef = FirebaseFirestore.instance.collection('userlog').doc(userDocId);
+                                final ds = await docRef.get();
+                                double current = 0.0;
+                                int count = 0;
+                                if (ds.exists) {
+                                  final d = ds.data();
+                                  if (d != null) {
+                                    if (d['rating'] != null) {
+                                      current = (d['rating'] is num) ? (d['rating'] as num).toDouble() : double.tryParse(d['rating'].toString()) ?? 0.0;
+                                    }
+                                    if (d['ratedCount'] != null) {
+                                      count = (d['ratedCount'] is int) ? d['ratedCount'] as int : int.tryParse(d['ratedCount'].toString()) ?? 0;
+                                    }
+                                  }
+                                }
+                                final newCount = count + 1;
+                                final newAvg = ((current * count) + selected) / newCount;
+                                await docRef.set({'rating': newAvg, 'ratedCount': newCount}, SetOptions(merge: true));
+                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thank you for rating')));
+                              } catch (e) {
+                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Rating failed: ${e.toString()}')));
+                              }
+                            },
+                      child: const Text('Submit Rating'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        backgroundColor: const Color(0xFF1A1F26),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Skip'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        );
+      },
+    );
   }
 
   bool _matchesFilters(Map<String, dynamic> data) {
@@ -191,6 +315,11 @@ class _QuickFindPageState extends State<QuickFindPage> {
                           setState(() {
                             districtFilter = val ?? '';
                             cityFilter = '';
+                            if (districtFilter.isNotEmpty) {
+                              allCities = List<String>.from(_citiesByDistrict[districtFilter] ?? []);
+                            } else {
+                              allCities = [];
+                            }
                           });
                         },
                         decoration: InputDecoration(
@@ -529,10 +658,10 @@ class _QuickFindPageState extends State<QuickFindPage> {
                                                             icon: const Icon(
                                                                 Icons.close,
                                                                 color: Colors.white70),
-                                                            onPressed: () =>
-                                                                Navigator.of(
-                                                                        context)
-                                                                    .pop(),
+                                                            onPressed: () {
+                                                              Navigator.of(context).pop();
+                                                              _showRatingDialog(context, doc.id);
+                                                            },
                                                           ),
                                                         ],
                                                       ),
@@ -617,6 +746,7 @@ class _QuickFindPageState extends State<QuickFindPage> {
                                                           onPressed: () {
                                                             Navigator.of(context).pop();
                                                             _callNumber(contactNumber);
+                                                            _showRatingDialog(context, doc.id);
                                                           },
                                                         ),
                                                       ),

@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Location permissions required for geolocation at runtime -->
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- If you need background location on Android 10+ add:
+        <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    -->
     <application
-        android:label="quickjob"
+        android:label="Quick Job"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">

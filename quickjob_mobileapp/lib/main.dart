@@ -1,3 +1,8 @@
+// main.dart
+// - App entrypoint and splash navigation.
+// - Initializes Firebase and shows the animated SplashScreen which routes to LandingPage.
+// - Contains `QuickJobApp` and `SplashScreen` classes used at app startup.
+// Important: changing the initial route or Firebase init here affects the whole app.
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
