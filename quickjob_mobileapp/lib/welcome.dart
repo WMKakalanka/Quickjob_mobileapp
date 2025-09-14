@@ -45,49 +45,57 @@ class _WelcomePageState extends State<WelcomePage> with SingleTickerProviderStat
         children: [
           Image.asset('assets/background.png', fit: BoxFit.cover),
           Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 190,
-                  width: 190,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      RotationTransition(
-                        turns: _controller,
-                        child: SizedBox(
-                          height: 190,
-                          width: 190,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 6,
-                            color: Colors.purple.withOpacity(0.85),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 190,
+                    width: 190,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        RotationTransition(
+                          turns: _controller,
+                          child: SizedBox(
+                            height: 190,
+                            width: 190,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 6,
+                              color: Colors.purple.withOpacity(0.85),
+                            ),
                           ),
                         ),
-                      ),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(56),
-                        child: Image.asset('assets/logo.png', height: 120, width: 120, fit: BoxFit.cover),
-                      ),
-                    ],
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(56),
+                          child: Image.asset('assets/logo.png', height: 120, width: 120, fit: BoxFit.cover),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Login Successful...',
-                  style: const TextStyle(color: Colors.white, fontSize: 26),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  widget.firstName,
-                  style: const TextStyle(color: Colors.white70, fontSize: 26, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Welcome Back!',
-                  style: const TextStyle(color: Colors.white, fontSize: 26),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  Text(
+                    'Login Successful...',
+                    style: const TextStyle(color: Colors.white, fontSize: 26),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.firstName,
+                    style: const TextStyle(color: Colors.white70, fontSize: 26, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Welcome Back!',
+                    style: const TextStyle(color: Colors.white, fontSize: 26),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

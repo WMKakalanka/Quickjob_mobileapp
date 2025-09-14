@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'employee_settings.dart';
+import 'sign_in.dart';
 
 class EmployeePage extends StatefulWidget {
   const EmployeePage({Key? key}) : super(key: key);
@@ -89,7 +90,7 @@ class _EmployeePageState extends State<EmployeePage> {
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white70),
                       tooltip: 'Back',
-                      onPressed: () => Navigator.maybePop(context),
+                      onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const SignInPage())),
                     ),
                     Image.asset('assets/logo2.png', width: 64, height: 64),
                     const SizedBox(width: 12),
@@ -395,8 +396,7 @@ class _JobCard extends StatelessWidget {
                 borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), topRight: Radius.circular(14)),
               ),
               child: Builder(builder: (ctx) {
-                // Prefer explicit imageUrl from the job document. If missing,
-                // pick an asset based on the first tag (job category).
+                // ...existing code...
                 final imageUrl = job['imageUrl'] as String?;
                 final tags = <String>[];
                 try {
@@ -408,7 +408,7 @@ class _JobCard extends StatelessWidget {
                   return Image.network(imageUrl, fit: BoxFit.cover);
                 }
 
-                // map of lowercase tag -> asset path (file names expected in assets/)
+                // ...existing code...
                 final map = <String, String>{
                   'painter - vehicle': 'assets/Painter - Vehicle.jpg',
                   'carpenter': 'assets/carpenter.jpg',
@@ -426,13 +426,11 @@ class _JobCard extends StatelessWidget {
                 final firstTag = tags.isNotEmpty ? tags.first.toString().toLowerCase().trim() : '';
                 final assetPath = map[firstTag] ?? 'assets/logo.png';
 
-                // Try to find the actual asset file among common variants.
+                // ...existing code...
                 return FutureBuilder<String?>(
                   future: (() async {
                     final candidates = <String>[];
-                    // direct mapped name first
                     candidates.add(assetPath);
-                    // common variants: lowercase filename, replace spaces with no-space, lower and capitalized
                     final nameOnly = assetPath.split('/').last;
                     final dir = assetPath.replaceFirst('/' + nameOnly, '');
                     final lower = nameOnly.toLowerCase();
@@ -441,7 +439,6 @@ class _JobCard extends StatelessWidget {
                     candidates.add('$dir/$lower');
                     candidates.add('$dir/$noSpaces');
                     candidates.add('$dir/$underscored');
-                    // also try Title case variation
                     final title = nameOnly.splitMapJoin(RegExp(r'\s+'), onMatch: (_) => ' ', onNonMatch: (s) => s);
                     candidates.add('$dir/$title');
 
@@ -449,9 +446,7 @@ class _JobCard extends StatelessWidget {
                       try {
                         await rootBundle.load(p);
                         return p;
-                      } catch (_) {
-                        // not found, continue
-                      }
+                      } catch (_) {}
                     }
                     return null;
                   })(),
@@ -473,7 +468,6 @@ class _JobCard extends StatelessWidget {
                         ),
                       ));
                     }
-                    // fallback to logo
                     debugPrint('No category asset found, falling back to logo');
                     return Image.asset('assets/logo.png', fit: BoxFit.cover, errorBuilder: (c, e, s) => Center(
                       child: Column(
@@ -489,111 +483,126 @@ class _JobCard extends StatelessWidget {
                 );
               }),
             ),
-            Expanded(
+            Flexible(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(job['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.white70),
-                        const SizedBox(width: 6),
-                        Text(job['district'] ?? '', style: const TextStyle(color: Colors.white70)),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.business, size: 14, color: Colors.white70),
-                        const SizedBox(width: 6),
-                        Expanded(child: Text(job['company'] ?? '', style: const TextStyle(color: Colors.white70))),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Render tags in a horizontal scroll to avoid vertical growth
-                    SizedBox(
-                      height: 30,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: (job['tags'] as List<dynamic>)
-                                .map((t) => Padding(
-                                      padding: const EdgeInsets.only(right: 6.0),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.withOpacity(1),
-                                          borderRadius: BorderRadius.circular(16),
-                                          // no border
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(job['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 14, color: Colors.white70),
+                          const SizedBox(width: 6),
+                          Flexible(child: Text(job['district'] ?? '', style: const TextStyle(color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.business, size: 14, color: Colors.white70),
+                          const SizedBox(width: 6),
+                          Flexible(child: Text(job['company'] ?? '', style: const TextStyle(color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 30,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: (job['tags'] as List<dynamic>)
+                                  .map((t) => Padding(
+                                        padding: const EdgeInsets.only(right: 6.0),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.withOpacity(1),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: Text(
+                                            t.toString(),
+                                            style: const TextStyle(color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                        child: Text(
-                                          t.toString(),
-                                          style: const TextStyle(color: Colors.white),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ))
-                              .toList(),
+                                      ))
+                                .toList(),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    // show a two-line preview and a "Read more" dialog for long excerpts
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          job['excerpt'] ?? '',
-                          style: const TextStyle(color: Colors.white70),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Builder(builder: (ctx) {
-                          final full = (job['excerpt'] ?? '').toString();
-                          // show Read more only when the text is reasonably long
-                          if (full.length <= 120) return const SizedBox.shrink();
-                          return Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: ctx,
-                                  builder: (_) => AlertDialog(
-                                    backgroundColor: Colors.grey[900],
-                                    title: const Text('Job details', style: TextStyle(color: Colors.white)),
-                                    content: SingleChildScrollView(
-                                      child: Text(full, style: const TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            job['excerpt'] ?? '',
+                            style: const TextStyle(color: Colors.white70),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Builder(builder: (ctx) {
+                            final full = (job['excerpt'] ?? '').toString();
+                            if (full.length <= 120) return const SizedBox.shrink();
+                            return Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  showDialog(
+                                    context: ctx,
+                                    builder: (_) => AlertDialog(
+                                      backgroundColor: Colors.grey[900],
+                                      title: const Text('Job details', style: TextStyle(color: Colors.white)),
+                                      content: SingleChildScrollView(
+                                        child: Text(full, style: const TextStyle(color: Colors.white70)),
+                                      ),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close')),
+                                      ],
                                     ),
-                                    actions: [
-                                      TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close')),
-                                    ],
-                                  ),
-                                );
-                              },
-                              child: const Text('Read more', style: TextStyle(color: Colors.white70)),
+                                  );
+                                },
+                                child: const Text('Read more', style: TextStyle(color: Colors.white70)),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(children: [const Icon(Icons.remove_red_eye, size: 14, color: Colors.white70), const SizedBox(width: 6), Text('${job['views'] ?? 0} views', style: const TextStyle(color: Colors.white70))]),
+                          Text(job['date'] ?? '', style: const TextStyle(color: Colors.white70)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          SizedBox(
+                            width: 110,
+                            child: ElevatedButton.icon(
+                                onPressed: () {
+                                  final email = job['publisherEmail'] as String?;
+                                  final phone = job['phone'] as String?;
+                                  showModalBottomSheet(
+                                    context: context,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => _ContactSheet(email: email, phone: phone),
+                                  );
+                                },
+                              icon: const Icon(Icons.email, size: 16, color: Colors.white),
+                              label: const Text('Email', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.black45, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: const Size(0, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             ),
-                          );
-                        }),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(children: [const Icon(Icons.remove_red_eye, size: 14, color: Colors.white70), const SizedBox(width: 6), Text('${job['views'] ?? 0} views', style: const TextStyle(color: Colors.white70))]),
-                        Text(job['date'] ?? '', style: const TextStyle(color: Colors.white70)),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Action buttons: Email, Contact, Apply Now
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        SizedBox(
-                          width: 110,
-                          child: ElevatedButton.icon(
+                          ),
+                          SizedBox(
+                            width: 110,
+                            child: ElevatedButton.icon(
                               onPressed: () {
                                 final email = job['publisherEmail'] as String?;
                                 final phone = job['phone'] as String?;
@@ -603,242 +612,222 @@ class _JobCard extends StatelessWidget {
                                   builder: (_) => _ContactSheet(email: email, phone: phone),
                                 );
                               },
-                            icon: const Icon(Icons.email, size: 16, color: Colors.white),
-                            label: const Text('Email', style: TextStyle(color: Colors.white)),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.black45, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: const Size(0, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                              icon: const Icon(Icons.phone, size: 16, color: Colors.white),
+                              label: const Text('Contact', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.black45, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: const Size(0, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            ),
                           ),
-                        ),
-                        SizedBox(
-                          width: 110,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final email = job['publisherEmail'] as String?;
-                              final phone = job['phone'] as String?;
-                              showModalBottomSheet(
-                                context: context,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => _ContactSheet(email: email, phone: phone),
-                              );
-                            },
-                            icon: const Icon(Icons.phone, size: 16, color: Colors.white),
-                            label: const Text('Contact', style: TextStyle(color: Colors.white)),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.black45, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: const Size(0, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 120,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final title = (job['title'] ?? '').toString();
-                              final tags = (job['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? ['General'];
-                              final defaultCategory = tags.isNotEmpty ? tags.first : 'General';
+                          SizedBox(
+                            width: 120,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                final title = (job['title'] ?? '').toString();
+                                final tags = (job['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? ['General'];
+                                final defaultCategory = tags.isNotEmpty ? tags.first : 'General';
 
-                              final nameCtrl = TextEditingController();
-                              final addrCtrl = TextEditingController();
-                              final phoneCtrl = TextEditingController();
+                                final nameCtrl = TextEditingController();
+                                final addrCtrl = TextEditingController();
+                                final phoneCtrl = TextEditingController();
 
-                              showDialog(
-                                context: context,
-                                builder: (dctx) {
-                                  bool isSubmitting = false;
-                                  return Dialog(
-                                    backgroundColor: Colors.transparent,
-                                    insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                                    child: StatefulBuilder(
-                                      builder: (ctx, setState) {
-                                        return Container(
-                                          constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[900],
-                                            borderRadius: BorderRadius.circular(14),
-                                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 12)],
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(16.0),
-                                            child: SingleChildScrollView(
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                                children: [
-                                                  Row(children: [const Icon(Icons.how_to_reg, color: Colors.white), const SizedBox(width: 8), Expanded(child: Text('Apply for: $title', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))],),
-                                                  const SizedBox(height: 12),
-                                                  const Text('Full Name *', style: TextStyle(color: Colors.white70)),
-                                                  const SizedBox(height: 6),
-                                                  TextField(controller: nameCtrl, style: const TextStyle(color: Colors.white), decoration: InputDecoration(fillColor: Colors.black45, filled: true, hintText: 'Enter your full name', hintStyle: const TextStyle(color: Colors.white38), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none))),
-                                                  const SizedBox(height: 12),
-                                                  const Text('Address *', style: TextStyle(color: Colors.white70)),
-                                                  const SizedBox(height: 6),
-                                                  TextField(controller: addrCtrl, style: const TextStyle(color: Colors.white), maxLines: 3, decoration: InputDecoration(fillColor: Colors.black45, filled: true, hintText: 'Enter your full address', hintStyle: const TextStyle(color: Colors.white38), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none))),
-                                                  const SizedBox(height: 12),
-                                                  const Text('Job Category', style: TextStyle(color: Colors.white70)),
-                                                  const SizedBox(height: 6),
-                                                  Builder(builder: (tagCtx) {
-                                                    if (tags.length > 1) {
-                                                      return SizedBox(
-                                                        height: 36,
-                                                        child: SingleChildScrollView(
-                                                          scrollDirection: Axis.horizontal,
-                                                          child: Row(
-                                                            children: tags
-                                                                .map((t) => Padding(
-                                                                      padding: const EdgeInsets.only(right: 8.0),
-                                                                      child: Container(
-                                                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                                        decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
-                                                                        child: Text(t, style: const TextStyle(color: Colors.white70)),
-                                                                      ),
-                                                                    ))
-                                                                .toList(),
+                                showDialog(
+                                  context: context,
+                                  builder: (dctx) {
+                                    bool isSubmitting = false;
+                                    return Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                                      child: StatefulBuilder(
+                                        builder: (ctx, setState) {
+                                          return Container(
+                                            constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[900],
+                                              borderRadius: BorderRadius.circular(14),
+                                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 12)],
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(16.0),
+                                              child: SingleChildScrollView(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                  children: [
+                                                    Row(children: [const Icon(Icons.how_to_reg, color: Colors.white), const SizedBox(width: 8), Expanded(child: Text('Apply for: $title', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))],),
+                                                    const SizedBox(height: 12),
+                                                    const Text('Full Name *', style: TextStyle(color: Colors.white70)),
+                                                    const SizedBox(height: 6),
+                                                    TextField(controller: nameCtrl, style: const TextStyle(color: Colors.white), decoration: InputDecoration(fillColor: Colors.black45, filled: true, hintText: 'Enter your full name', hintStyle: const TextStyle(color: Colors.white38), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none))),
+                                                    const SizedBox(height: 12),
+                                                    const Text('Address *', style: TextStyle(color: Colors.white70)),
+                                                    const SizedBox(height: 6),
+                                                    TextField(controller: addrCtrl, style: const TextStyle(color: Colors.white), maxLines: 3, decoration: InputDecoration(fillColor: Colors.black45, filled: true, hintText: 'Enter your full address', hintStyle: const TextStyle(color: Colors.white38), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none))),
+                                                    const SizedBox(height: 12),
+                                                    const Text('Job Category', style: TextStyle(color: Colors.white70)),
+                                                    const SizedBox(height: 6),
+                                                    Builder(builder: (tagCtx) {
+                                                      if (tags.length > 1) {
+                                                        return SizedBox(
+                                                          height: 36,
+                                                          child: SingleChildScrollView(
+                                                            scrollDirection: Axis.horizontal,
+                                                            child: Row(
+                                                              children: tags
+                                                                  .map((t) => Padding(
+                                                                        padding: const EdgeInsets.only(right: 8.0),
+                                                                        child: Container(
+                                                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                                          decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+                                                                          child: Text(t, style: const TextStyle(color: Colors.white70)),
+                                                                        ),
+                                                                      ))
+                                                                  .toList(),
+                                                            ),
                                                           ),
+                                                        );
+                                                      }
+                                                      return TextField(enabled: false, controller: TextEditingController(text: defaultCategory), style: const TextStyle(color: Colors.white70), decoration: InputDecoration(fillColor: Colors.black26, filled: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none)));
+                                                    }),
+                                                    const SizedBox(height: 12),
+                                                    const Text('Contact Number *', style: TextStyle(color: Colors.white70)),
+                                                    const SizedBox(height: 6),
+                                                    TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, style: const TextStyle(color: Colors.white), decoration: InputDecoration(fillColor: Colors.black45, filled: true, hintText: 'Enter your phone number', hintStyle: const TextStyle(color: Colors.white38), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none))),
+                                                    const SizedBox(height: 16),
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.of(ctx).pop();
+                                                          },
+                                                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
                                                         ),
-                                                      );
-                                                    }
-                                                    return TextField(enabled: false, controller: TextEditingController(text: defaultCategory), style: const TextStyle(color: Colors.white70), decoration: InputDecoration(fillColor: Colors.black26, filled: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none)));
-                                                  }),
-                                                  const SizedBox(height: 12),
-                                                  const Text('Contact Number *', style: TextStyle(color: Colors.white70)),
-                                                  const SizedBox(height: 6),
-                                                  TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, style: const TextStyle(color: Colors.white), decoration: InputDecoration(fillColor: Colors.black45, filled: true, hintText: 'Enter your phone number', hintStyle: const TextStyle(color: Colors.white38), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none))),
-                                                  const SizedBox(height: 16),
-                                                  Row(
-                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                    children: [
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          Navigator.of(ctx).pop();
-                                                        },
-                                                        child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-                                                      ),
-                                                      ElevatedButton(
-                                                        style: ElevatedButton.styleFrom(
-                                                          backgroundColor: Colors.purple,
-                                                          minimumSize: const Size(120, 40),
-                                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                        ),
-                                                        onPressed: isSubmitting
-                                                            ? null
-                                                            : () async {
-                                                                final name = nameCtrl.text.trim();
-                                                                final addr = addrCtrl.text.trim();
-                                                                final phone = phoneCtrl.text.trim();
-                                                                if (name.isEmpty || addr.isEmpty || phone.isEmpty) {
-                                                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill required fields')));
-                                                                  return;
-                                                                }
-                                                                try {
-                                                                  setState(() {
-                                                                    isSubmitting = true;
-                                                                  });
+                                                        ElevatedButton(
+                                                          style: ElevatedButton.styleFrom(
+                                                            backgroundColor: Colors.purple,
+                                                            minimumSize: const Size(120, 40),
+                                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                          ),
+                                                          onPressed: isSubmitting
+                                                              ? null
+                                                              : () async {
+                                                                  final name = nameCtrl.text.trim();
+                                                                  final addr = addrCtrl.text.trim();
+                                                                  final phone = phoneCtrl.text.trim();
+                                                                  if (name.isEmpty || addr.isEmpty || phone.isEmpty) {
+                                                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill required fields')));
+                                                                    return;
+                                                                  }
+                                                                  try {
+                                                                    setState(() {
+                                                                      isSubmitting = true;
+                                                                    });
 
-                                                                  final applicant = {
-                                                                    'name': name,
-                                                                    'address': addr,
-                                                                    'contactNumber': phone,
-                                                                    'jobTitle': title,
-                                                                    'jobCategory': tags.join(', '),
-                                                                    'appliedAt': Timestamp.now(),
-                                                                  };
-                                                                  final pubEmail = job['publisherEmail'] as String?;
-                                                                  if (pubEmail != null && pubEmail.isNotEmpty) applicant['publisherEmail'] = pubEmail;
+                                                                    final applicant = {
+                                                                      'name': name,
+                                                                      'address': addr,
+                                                                      'contactNumber': phone,
+                                                                      'jobTitle': title,
+                                                                      'jobCategory': tags.join(', '),
+                                                                      'appliedAt': Timestamp.now(),
+                                                                    };
+                                                                    final pubEmail = job['publisherEmail'] as String?;
+                                                                    if (pubEmail != null && pubEmail.isNotEmpty) applicant['publisherEmail'] = pubEmail;
 
-                                                                  await FirebaseFirestore.instance.collection('applicant').add(applicant);
+                                                                    await FirebaseFirestore.instance.collection('applicant').add(applicant);
 
-                                                                  // close the apply dialog
-                                                                  Navigator.of(ctx).pop();
+                                                                    Navigator.of(ctx).pop();
 
-                                                                  // show an animated, branded success dialog (purple gradient + scale+slide+fade)
-                                                                  showGeneralDialog(
-                                                                    context: context,
-                                                                    barrierDismissible: false,
-                                                                    barrierLabel: 'Application Submitted',
-                                                                    transitionDuration: const Duration(milliseconds: 520),
-                                                                    pageBuilder: (context2, anim1, anim2) => const SizedBox.shrink(),
-                                                                    transitionBuilder: (context2, a1, a2, child) {
-                                                                      return Opacity(
-                                                                        opacity: a1.value,
-                                                                        child: Transform.translate(
-                                                                          offset: Offset(0, (1 - a1.value) * 30),
-                                                                          child: Transform.scale(
-                                                                            scale: 0.9 + 0.1 * a1.value,
-                                                                            child: Center(
-                                                                              child: Container(
-                                                                                width: 320,
-                                                                                padding: const EdgeInsets.all(20),
-                                                                                decoration: BoxDecoration(
-                                                                                  gradient: LinearGradient(colors: [Colors.purple.shade800.withOpacity(0.98), Colors.purple.shade600.withOpacity(0.95)]),
-                                                                                  borderRadius: BorderRadius.circular(14),
-                                                                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.28), blurRadius: 14, offset: const Offset(0, 6))],
-                                                                                ),
-                                                                                child: Column(
-                                                                                  mainAxisSize: MainAxisSize.min,
-                                                                                  children: [
-                                                                                    Container(
-                                                                                      decoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                                                                                      padding: const EdgeInsets.all(6),
-                                                                                      child: const Icon(Icons.check_circle, color: Colors.white, size: 56),
-                                                                                    ),
-                                                                                    const SizedBox(height: 12),
-                                                                                    const Text(
-                                                                                      'Your Application Submitted Successfully!..',
-                                                                                      textAlign: TextAlign.center,
-                                                                                      style: TextStyle(
-                                                                                        color: Colors.white,
-                                                                                        fontSize: 16,
-                                                                                        fontWeight: FontWeight.bold,
-                                                                                        decoration: TextDecoration.none,
+                                                                    showGeneralDialog(
+                                                                      context: context,
+                                                                      barrierDismissible: false,
+                                                                      barrierLabel: 'Application Submitted',
+                                                                      transitionDuration: const Duration(milliseconds: 520),
+                                                                      pageBuilder: (context2, anim1, anim2) => const SizedBox.shrink(),
+                                                                      transitionBuilder: (context2, a1, a2, child) {
+                                                                        return Opacity(
+                                                                          opacity: a1.value,
+                                                                          child: Transform.translate(
+                                                                            offset: Offset(0, (1 - a1.value) * 30),
+                                                                            child: Transform.scale(
+                                                                              scale: 0.9 + 0.1 * a1.value,
+                                                                              child: Center(
+                                                                                child: Container(
+                                                                                  width: 320,
+                                                                                  padding: const EdgeInsets.all(20),
+                                                                                  decoration: BoxDecoration(
+                                                                                    gradient: LinearGradient(colors: [Colors.purple.shade800.withOpacity(0.98), Colors.purple.shade600.withOpacity(0.95)]),
+                                                                                    borderRadius: BorderRadius.circular(14),
+                                                                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.28), blurRadius: 14, offset: const Offset(0, 6))],
+                                                                                  ),
+                                                                                  child: Column(
+                                                                                    mainAxisSize: MainAxisSize.min,
+                                                                                    children: [
+                                                                                      Container(
+                                                                                        decoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                                                                                        padding: const EdgeInsets.all(6),
+                                                                                        child: const Icon(Icons.check_circle, color: Colors.white, size: 56),
                                                                                       ),
-                                                                                    ),
-                                                                                  ],
+                                                                                      const SizedBox(height: 12),
+                                                                                      const Text(
+                                                                                        'Your Application Submitted Successfully!..',
+                                                                                        textAlign: TextAlign.center,
+                                                                                        style: TextStyle(
+                                                                                          color: Colors.white,
+                                                                                          fontSize: 16,
+                                                                                          fontWeight: FontWeight.bold,
+                                                                                          decoration: TextDecoration.none,
+                                                                                        ),
+                                                                                      ),
+                                                                                    ],
+                                                                                  ),
                                                                                 ),
                                                                               ),
                                                                             ),
                                                                           ),
-                                                                        ),
-                                                                      );
-                                                                    },
-                                                                  );
+                                                                        );
+                                                                      },
+                                                                    );
 
-                                                                  // auto-dismiss success dialog and redirect to EmployeePage
-                                                                  await Future.delayed(const Duration(milliseconds: 1400));
-                                                                  try {
-                                                                    Navigator.of(context).pop(); // pop success dialog
-                                                                  } catch (_) {}
-                                                                  // navigate back to the employee dashboard (reset stack)
-                                                                  Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const EmployeePage()), (r) => false);
-                                                                } catch (e) {
-                                                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submit failed: ${e.toString()}')));
-                                                                } finally {
-                                                                  try {
-                                                                    setState(() {
-                                                                      isSubmitting = false;
-                                                                    });
-                                                                  } catch (_) {}
-                                                                }
-                                                              },
-                                                        child: isSubmitting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Submit Application'),
-                                                      ),
-                                                    ],
-                                                  )
-                                                ],
+                                                                    await Future.delayed(const Duration(milliseconds: 1400));
+                                                                    try {
+                                                                      Navigator.of(context).pop();
+                                                                    } catch (_) {}
+                                                                    Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const EmployeePage()), (r) => false);
+                                                                  } catch (e) {
+                                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submit failed: ${e.toString()}')));
+                                                                  } finally {
+                                                                    try {
+                                                                      setState(() {
+                                                                        isSubmitting = false;
+                                                                      });
+                                                                    } catch (_) {}
+                                                                  }
+                                                                },
+                                                          child: isSubmitting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Submit Application'),
+                                                        ),
+                                                      ],
+                                                    )
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                            icon: const Icon(Icons.send, size: 16, color: Colors.white),
-                            label: const Text('Apply Now', style: TextStyle(color: Colors.white)),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: const Size(0, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              icon: const Icon(Icons.send, size: 16, color: Colors.white),
+                              label: const Text('Apply Now', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), minimumSize: const Size(0, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            ),
                           ),
-                        ),
-                      ],
-                    )
-                  ],
+                        ],
+                      )
+                    ],
+                  ),
                 ),
               ),
             )

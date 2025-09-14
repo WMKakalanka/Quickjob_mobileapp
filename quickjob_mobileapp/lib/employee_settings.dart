@@ -296,18 +296,27 @@ class _EmployeeSettingsPageState extends State<EmployeeSettingsPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(children: [
-                                IconButton(
-                                  icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                                  onPressed: () {
-                                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const EmployeePage()));
-                                  },
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(Icons.settings, color: Colors.purple.shade100),
-                                const SizedBox(width: 8),
-                                const Text('Employee Account Settings', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))
-                              ]),
+                              Flexible(
+                                child: Row(children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                                    onPressed: () {
+                                      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const EmployeePage()));
+                                    },
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.settings, color: Colors.purple.shade100),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'Employee Account Settings',
+                                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ]),
+                              ),
                               const SizedBox.shrink(),
                             ],
                           ),

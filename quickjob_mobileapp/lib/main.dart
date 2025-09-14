@@ -156,88 +156,96 @@ class _SplashScreenState extends State<SplashScreen>
           ),
 
           // Center content
-          Column(
-            children: [
-              Expanded(
-                flex: 7,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Modern Animated Logo
-                    AnimatedBuilder(
-                      animation: Listenable.merge([_logoController, _pulseController]),
-                      builder: (context, child) {
-                        return Opacity(
-                          opacity: _logoFadeAnimation.value,
-                          child: Transform.scale(
-                            scale: _logoScaleAnimation.value * _pulseAnimation.value,
-                            child: Image.asset(
-                              'assets/logo.png',
-                              height: 200,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    // Modern Animated Text
-                    FadeTransition(
-                      opacity: _textFadeAnimation,
-                      child: SlideTransition(
-                        position: _textSlideAnimation,
-                        child: const Text(
-                          "Quick Job Mobile",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 6,
-                                color: Colors.black54,
-                                offset: Offset(2, 2),
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Modern Animated Logo
+                      AnimatedBuilder(
+                        animation: Listenable.merge([_logoController, _pulseController]),
+                        builder: (context, child) {
+                          return Opacity(
+                            opacity: _logoFadeAnimation.value,
+                            child: Transform.scale(
+                              scale: _logoScaleAnimation.value * _pulseAnimation.value,
+                              child: Image.asset(
+                                'assets/logo.png',
+                                height: 200,
                               ),
-                            ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                      // Modern Animated Text
+                      FadeTransition(
+                        opacity: _textFadeAnimation,
+                        child: SlideTransition(
+                          position: _textSlideAnimation,
+                          child: const Text(
+                            "Quick Job Mobile",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 6,
+                                  color: Colors.black54,
+                                  offset: Offset(2, 2),
+                                ),
+                              ],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: 18.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '© 2025 QuickJob. All rights reserved.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.15,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 18.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '© 2025 QuickJob. All rights reserved.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Software Version 1.0.0',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
+                          SizedBox(height: 2),
+                          Text(
+                            'Software Version 1.0.0',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
